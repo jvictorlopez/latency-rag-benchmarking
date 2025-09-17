@@ -1,0 +1,84 @@
+version: "3.9"
+
+services:
+  weaviate:
+    image: semitechnologies/weaviate:1.25.9
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      QUERY_DEFAULTS_LIMIT: "25"
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: "/var/lib/weaviate"
+      DEFAULT_VECTORIZER_MODULE: "text2vec-transformers"
+      ENABLE_MODULES: "text2vec-transformers,reranker-transformers"
+      TRANSFORMERS_INFERENCE_API: "http://local-inference:5001"
+      RERANKER_INFERENCE_API: "http://local-inference:5001"
+      CLUSTER_HOSTNAME: "node1"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    depends_on:
+      local-inference:
+        condition: service_healthy
+    volumes:
+      - weav-data:/var/lib/weaviate
+
+  local-inference:
+    build: ./inference
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    # no host port exposure needed; used internally by Weaviate
+
+  # (No Ollama; OpenAI-only)
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      WEAVIATE_HTTP_HOST: "weaviate"
+      WEAVIATE_HTTP_PORT: "8080"
+      WEAVIATE_GRPC_HOST: "weaviate"
+      WEAVIATE_GRPC_PORT: "50051"
+
+      # OpenAI-compatible path
+      OPENAI_API_BASE: "${OPENAI_API_BASE:-https://api.openai.com/v1}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      LLM_MODEL: "${LLM_MODEL:-gpt-4o-mini}"
+      LLM_FALLBACK_MODEL: "${LLM_FALLBACK_MODEL:-gpt-4o-mini}"
+
+      # Chunking
+      CHUNK_TOKENS: "${CHUNK_TOKENS:-450}"
+      CHUNK_OVERLAP: "${CHUNK_OVERLAP:-60}"
+    ports:
+      - "8000:8000"
+    depends_on:
+      weaviate:
+        condition: service_healthy
+      local-inference:
+        condition: service_healthy
+
+  ui:
+    build: ./ui
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      API_BASE_URL: "http://api:8000"
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  weav-data:
+
+
