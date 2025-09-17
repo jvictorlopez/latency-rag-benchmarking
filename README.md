@@ -34,16 +34,21 @@
 |---|---|---|---|
 | `GET /.well-known/ready` | Readiness simples | – | `curl -s http://localhost:8000/.well-known/ready` |
 | `GET /meta` | Metadados de configuração | – | `curl -s http://localhost:8000/meta` |
-| `POST /documents` | Upload/ingestão de PDFs | multipart `files[]` | ```bash
+| `POST /documents` | Upload/ingestão de PDFs | multipart `files[]` | 
+```bash
 curl -s -F "files=@docs/produto_2.pdf;type=application/pdf" \
      -F "files=@docs/1756-in043_-en-p.pdf;type=application/pdf" \
      http://localhost:8000/documents
-``` |
-| `POST /question` | Pergunta + modo de recuperação | JSON `{question, mode, top_k, alpha, rerank_property}` | ```bash
+```
+|
+| `POST /question` | Pergunta + modo de recuperação | JSON `{question, mode, top_k, alpha, rerank_property}` |
+
+```bash
 curl -s -X POST http://localhost:8000/question \
   -H 'Content-Type: application/json' \
   -d '{"question":"motor power rating","mode":"hybrid","top_k":5,"alpha":0.5,"rerank_property":"chunk"}'
-``` |
+```
+ |
 
 - Resposta típica: `{ "answer": str, "references": [str], "contexts": [{title,page,chunk,...}] }`.
 - Benchmark: a UI dispara 5 requisições ao mesmo `POST /question` (modos fixos) em paralelo e mede a latência por modo; não há endpoint extra.
@@ -152,15 +157,3 @@ curl -s -X POST http://localhost:8000/question \
 - **Serviço local de embeddings**: isolamento operacional, controle de modelos (`/vectors`, `/rerank`) e previsibilidade de latência.
 - **Compatibilidade do cliente**: `_call_near_vector` abstrai diferenças de assinatura entre versões do cliente Weaviate.
 - **Baseline `no_rag`**: controle experimental para comparar com respostas puras de LLM.
-
-## Licença
-
-MIT.
-
----
-
-### Screenshots
-
-- UI – QA e Benchmark: ver `docs/screenshot.png`.
-
-
