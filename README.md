@@ -61,7 +61,7 @@ curl -s -X POST http://localhost:8000/question \
 
 ## Como Rodar
 
-Primeiro passo: Inserir chave da OpenAI no .env
+Primeiro passo: Inserir chave válida da OpenAI no .env
 
 ### Docker (recomendado)
 
